@@ -4,112 +4,57 @@ import Button from "../button/Button";
 import Timer from "../timer/Timer";
 import { useEffect, useRef, useState } from "react";
 
+const formatTime = (timer) => {
+  const getSeconds = `0${timer % 60}`.slice(-2);
+  const minutes = `${Math.floor(timer / 60)}`;
+  const getMinutes = `0${minutes % 60}`.slice(-2);
+  const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
+  return `${getHours} : ${getMinutes} : ${getSeconds}`;
+};
+
 export default function TimerWrapper() {
   const [isRunning, setIsRunning] = useState(false);
-  const [miliSeconds, setMiliSeconds] = useState(0);
   const [seconds, setSeconds] = useState(0);
-  const [minutes, setMinutes] = useState(0);
-
-  //  проблемы:
-  //  значение удваивается из=за стрикт мода
-  // как передать разный интервал и использовать его, стейты должны быть в дочке?
-
-  // //states
-  const setStateMiliSeconds = () => {
-    setMiliSeconds((prev) => {
-      if (prev === 59) {
-        setStateSeconds();
-        return 0;
-      }
-      return prev + 1;
-    });
-  };
-
-  const setStateSeconds = () => {
-    setSeconds((prev) => {
-      if (prev === 59) {
-        setStateMinutes();
-        return 0;
-      }
-      return prev + 1;
-    });
-  };
-
-  const setStateMinutes = () => {
-    setMinutes((prev) => {
-      return prev + 1;
-    });
-  };
+  const [history, setHistory] = useState([]);
+  const timerRef = useRef(0);
 
   useEffect(() => {
-    let interval = null;
-    if (isRunning) {
-      interval = setInterval(() => {
-        setStateMiliSeconds();
-      }, 10);
-    } else if (!isRunning) {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning]);
-
-  //handlers
-  const handleStart = () => {
     if (!isRunning) {
-      setIsRunning(true);
+      return;
     }
-  };
 
-  const handleStop = () => {
-    if (isRunning) {
-      setIsRunning(false);
-    }
-  };
+    timerRef.current = setInterval(() => {
+      setSeconds(seconds + 1);
+    }, 1000);
 
-  const handleInterval = () => {};
+    return () => clearInterval(timerRef.current);
+  }, [isRunning, seconds]);
 
   const handleReset = () => {
     setIsRunning(false);
-    setMiliSeconds(0);
     setSeconds(0);
-    setMinutes(0);
+    clearInterval(timerRef.current);
+  };
+
+  const handleInterval = () => {
+    setHistory((prev) => [...prev, seconds]);
   };
 
   return (
     <div className={cn(styles[`timer-wrapper`])}>
       <div className={cn(styles[`timer-wrapper__list`])}>
-        <div className={cn(styles[`timer-wrapper__mini-timer`])}>
-          <Timer miliSeconds={miliSeconds} seconds={seconds} minutes={minutes} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__mini-timer`])}>
-          <Timer miliSeconds={miliSeconds} seconds={seconds} minutes={minutes} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__mini-timer`])}>
-          <Timer miliSeconds={miliSeconds} seconds={seconds} minutes={minutes} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__mini-timer`])}>
-          <Timer miliSeconds={miliSeconds} seconds={seconds} minutes={minutes} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__mini-timer`])}>
-          <Timer miliSeconds={miliSeconds} seconds={seconds} minutes={minutes} />
-        </div>
+        {history.map((sec) => (
+          <Timer text={formatTime(sec)} />
+        ))}
       </div>
       <div className={cn(styles[`timer-wrapper__main-timer`])}>
-        <Timer miliSeconds={miliSeconds} seconds={seconds} minutes={minutes} />
+        <span className={cn(styles[`timer-wrapper__count`])}>{formatTime(seconds)}</span>
       </div>
       <div className={cn(styles[`timer-wrapper__control`])}>
-        <div className={cn(styles[`timer-wrapper__btn`])}>
-          <Button use="start" text="start" handler={handleStart} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__btn`])}>
-          <Button use="stop" text="stop" handler={handleStop} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__btn`])}>
-          <Button use="interval" text="interval" handler={handleInterval} />
-        </div>
-        <div className={cn(styles[`timer-wrapper__btn`])}>
-          <Button use="reset" text="reset" handler={handleReset} />
-        </div>
+        <Button use="start" text="start" handler={() => setIsRunning(true)} />
+        <Button use="stop" text="stop" handler={() => setIsRunning(false)} />
+        <Button use="interval" text="interval" handler={handleInterval} />
+        <Button use="reset" text="reset" handler={handleReset} />
       </div>
     </div>
   );
